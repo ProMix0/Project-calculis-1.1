@@ -66,13 +66,20 @@ namespace Server
         public TcpConnectionToClient(TcpClient client)
         {
             this.client = client;
-            receiveThread = new Thread(new ThreadStart(() =>
-              {
-                  while (true)
+            try
+            {
+                receiveThread = new Thread(new ThreadStart(() =>
                   {
-                      OnReceiveData(Receive());
-                  }
-              }));
+                      while (true)
+                      {
+                          OnReceiveData(Receive());
+                      }
+                  }));
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
             receiveThread.Start();
         }
 

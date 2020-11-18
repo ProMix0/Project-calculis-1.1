@@ -24,10 +24,10 @@ namespace ClientShell
         public MainWindow()
         {
             InitializeComponent();
+            ConnectionToServer connection = new ConnectionToServer();
+            connection.Connect("10.0.0.10", 8888);
             try
             {
-                ConnectionToServer connection = new ConnectionToServer();
-                connection.Connect("10.0.0.10", 8888);
                 button.Click += (object sender, RoutedEventArgs e) =>
                 {
                     if (!connection.Disposed)
