@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -30,16 +31,16 @@ namespace ClientShell
             {
                 button.Click += (object sender, RoutedEventArgs e) =>
                 {
-                    if (!connection.Disposed)
+                    if (connection.IsActive())
                     {
                         connection.Send(Encoding.UTF8.GetBytes(input.Text));
                         output.Text = Encoding.UTF8.GetString(connection.Receive());
-                    }
+                    };
                 };
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message);
+                MessageBox.Show(ex.Message);
             }
         }
     }

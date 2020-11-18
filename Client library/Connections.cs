@@ -9,7 +9,18 @@ namespace Client_library
     {
         private TcpClient client = new TcpClient();
 
-        public bool Disposed { get => !client.Connected; }
+        public bool IsActive()
+        {
+            try
+            {
+                client.GetStream().Write(new byte[0]);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
 
         public void Connect(string ip, int port)
         {
@@ -18,19 +29,27 @@ namespace Client_library
 
         public void Send(byte[] message)
         {
+            if (IsActive())
             using (BinaryWriter writer = new BinaryWriter(client.GetStream()))
             {
                 writer.Write(message);
             }
         }
 
-        public byte[] Receive()
+        public byte[] Receive() // BUG Не происходит получения сообщения, так как IsActive() возвращает false
         {
-            while (client.Available == 0) Thread.Sleep(100);
-            using (BinaryReader reader = new BinaryReader(client.GetStream()))
-            {
-                return reader.ReadBytes(client.Available);
-            }
+            while (true)
+                if (IsActive() && client.GetStream().DataAvailable)
+                {
+                    using (BinaryReader reader = new BinaryReader(client.GetStream()))
+                    {
+                        return reader.ReadBytes(client.Available);
+                    }
+                }
+                else
+                {
+                    Thread.Sleep(100);
+                }
         }
     }
 }

@@ -38,7 +38,7 @@ namespace Server
                     while (true)
                     {
                         TcpConnectionToClient connection = new TcpConnectionToClient(listener.AcceptTcpClient());
-                        OnNewConnection(connection);
+                        OnNewConnection?.Invoke(connection);
                         connections.Add(connection);
                     }
                 }
@@ -59,7 +59,7 @@ namespace Server
         private TcpClient client;
 
         public delegate void ReceiveData(byte[] message);
-        public event ReceiveData OnReceiveData=(byte[] message)=> { };
+        public event ReceiveData OnReceiveData;
 
         private Thread receiveThread;
 
@@ -72,7 +72,7 @@ namespace Server
                   {
                       while (true)
                       {
-                          OnReceiveData(Receive());
+                          OnReceiveData?.Invoke(Receive());
                       }
                   }));
             }
@@ -83,9 +83,23 @@ namespace Server
             receiveThread.Start();
         }
 
+        public bool IsActive()
+        {
+            try
+            {
+                client.GetStream().Write(new byte[0]);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                return false;
+            }
+        }
+
         public void Send(byte[] message)
         {
-            using(BinaryWriter writer = new BinaryWriter(client.GetStream()))
+            if (IsActive())
+            using (BinaryWriter writer = new BinaryWriter(client.GetStream()))
             {
                 writer.Write(message);
             }
@@ -93,11 +107,19 @@ namespace Server
 
         public byte[] Receive()
         {
-            while (client.Available == 0) Thread.Sleep(100);
-            using (BinaryReader reader= new BinaryReader(client.GetStream()))
-            {
-                return reader.ReadBytes(client.Available);
-            }
+            while (true)
+                if (IsActive() && client.GetStream().DataAvailable)
+                {
+                    using (BinaryReader reader = new BinaryReader(client.GetStream()))
+                    {
+                        var temp= reader.ReadBytes(client.Available);
+                        return temp;
+                    }
+                }
+                else
+                {
+                    Thread.Sleep(100);
+                }
         }
 
         public void Disconnect()

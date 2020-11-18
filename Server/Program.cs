@@ -22,7 +22,7 @@ namespace Server
                       client.Send(message);
                   };
               };
-            while (true) ;
+            Console.ReadLine();
         }
     }
 }
