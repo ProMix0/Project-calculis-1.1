@@ -25,8 +25,9 @@ namespace ClientShell
         public MainWindow()
         {
             InitializeComponent();
-            ConnectionToServer connection = new ConnectionToServer();
-            connection.Connect("10.0.0.10", 8888);
+            TcpConnectionToServer connection = new TcpConnectionToServer();
+            connection.SetEndPoint("10.0.0.10", 8888);
+            connection.Connect();
             try
             {
                 button.Click += (object sender, RoutedEventArgs e) =>
@@ -34,7 +35,7 @@ namespace ClientShell
                     if (connection.IsActive())
                     {
                         connection.Send(Encoding.UTF8.GetBytes(input.Text));
-                        output.Text = Encoding.UTF8.GetString(connection.Receive());
+                        output.Text = Encoding.UTF8.GetString(connection.Receive().ToArray());
                     };
                 };
             }

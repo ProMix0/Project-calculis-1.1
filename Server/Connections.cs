@@ -1,9 +1,11 @@
-﻿using System;
+﻿using CommonLibrary;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Server
 {
@@ -54,78 +56,91 @@ namespace Server
         }
     }
 
-    public class TcpConnectionToClient
+    public class TcpConnectionToClient:AbstractConnection
     {
         private TcpClient client;
+        private BinaryReader reader;
+        private BinaryWriter writer;
 
-        public delegate void ReceiveData(byte[] message);
-        public event ReceiveData OnReceiveData;
+        private Task receiveTask;
 
-        private Thread receiveThread;
+        private List<byte> receivedBytes = new List<byte>();
+
+        public override event ReceiveData OnReceiveData;
 
         public TcpConnectionToClient(TcpClient client)
         {
             this.client = client;
-            try
-            {
-                receiveThread = new Thread(new ThreadStart(() =>
-                  {
-                      while (true)
-                      {
-                          OnReceiveData?.Invoke(Receive());
-                      }
-                  }));
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.Message);
-            }
-            receiveThread.Start();
+            reader = new BinaryReader(client.GetStream());
+            writer = new BinaryWriter(client.GetStream());
+                BeginReceive();
         }
 
-        public bool IsActive()
+        public override void SetEndPoint(string ip, int port)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override bool IsActive()
         {
             try
             {
                 client.GetStream().Write(new byte[0]);
                 return true;
             }
-            catch (Exception ex)
+            catch
             {
                 return false;
             }
         }
 
-        public void Send(byte[] message)
+        public override void Send(byte[] message)
         {
             if (IsActive())
-            using (BinaryWriter writer = new BinaryWriter(client.GetStream()))
             {
                 writer.Write(message);
             }
         }
 
-        public byte[] Receive()
+        private void BeginReceive()
         {
-            while (true)
-                if (IsActive() && client.GetStream().DataAvailable)
+            receiveTask = Task.Factory.StartNew(() =>
+            {
+                while (true)
                 {
-                    using (BinaryReader reader = new BinaryReader(client.GetStream()))
+                    if (IsActive() && client.GetStream().DataAvailable)
                     {
-                        var temp= reader.ReadBytes(client.Available);
-                        return temp;
+                        byte[] temp = reader.ReadBytes(client.Available);
+                        OnReceiveData?.Invoke(temp);
+                        receivedBytes.AddRange(temp);
+                    }
+                    else
+                    {
+                        Thread.Sleep(100);
                     }
                 }
-                else
-                {
-                    Thread.Sleep(100);
-                }
+            });
         }
 
-        public void Disconnect()
+        public override void Connect()
+        {
+            throw new NotImplementedException();
+        }
+
+        public override void Disconnect()
         {
             Server.connections.Remove(this);
-            receiveThread.Abort();
+            receiveTask.Dispose();
+            client.Close();
+            reader.Close();
+            writer.Close();
+        }
+
+        public override IEnumerable<byte> Receive()
+        {
+            foreach (var item in receivedBytes)
+                yield return item;
+            receivedBytes.Clear();
         }
     }
 }

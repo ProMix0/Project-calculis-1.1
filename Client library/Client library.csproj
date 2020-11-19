@@ -5,4 +5,8 @@
     <RootNamespace>Client_library</RootNamespace>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\CommonLibrary\CommonLibrary.csproj" />
+  </ItemGroup>
+
 </Project>
