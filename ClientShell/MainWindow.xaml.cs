@@ -1,4 +1,5 @@
-﻿using Client_library;
+﻿//using ClientLibrary;
+using CommonLibrary;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -25,24 +26,28 @@ namespace ClientShell
         public MainWindow()
         {
             InitializeComponent();
-            TcpConnectionToServer connection = new TcpConnectionToServer();
-            connection.SetEndPoint("10.0.0.10", 8888);
+            AbstractConnection connection = new TcpConnection(); //new RsaDecorator(new TcpConnection(),false);
+            connection.SetEndPoint("127.0.0.1", 8888);
+            connection.ReceivingState = ReceivingState.Method;
             connection.Connect();
-            try
-            {
-                button.Click += (object sender, RoutedEventArgs e) =>
-                {
-                    if (connection.IsActive())
-                    {
-                        connection.Send(Encoding.UTF8.GetBytes(input.Text));
-                        output.Text = Encoding.UTF8.GetString(connection.Receive().ToArray());
-                    };
-                };
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message);
-            }
+            while (connection.GetReceivedCount() == 0) Thread.Sleep(100);
+            output.Text = Encoding.UTF8.GetString(connection.GetReceived().ToArray());
+            //try
+            //{
+            //    button.Click += (object sender, RoutedEventArgs e) =>
+            //    {
+            //        if (connection.IsActive())
+            //        {
+            //            connection.Send(Encoding.UTF8.GetBytes(input.Text));
+            //            while (connection.GetReceivedCount() == 0) Thread.Sleep(100);
+            //            output.Text = Encoding.UTF8.GetString(connection.GetReceived().ToArray());
+            //        }
+            //    };
+            //}
+            //catch (Exception ex)
+            //{
+            //    MessageBox.Show(ex.Message);
+            //}
         }
     }
 }

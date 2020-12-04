@@ -1,7 +1,9 @@
-﻿using System;
+﻿using CommonLibrary;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Server
 {
@@ -10,19 +12,20 @@ namespace Server
         static void Main()
         {
             Server.SetPort(8888);
-            new Thread(new ThreadStart(Server.Listen)).Start();
-            Server.OnNewConnection += (TcpConnectionToClient client) =>
-              {
-                  Console.WriteLine("New connection!");
-                  client.OnReceiveData += (byte[] message) =>
-                  {
-                      Console.WriteLine($"Has been received message:{Encoding.UTF8.GetString(message)}");
-                      for (int i = 0; i < message.Length; i++)
-                          message[i]++;
-                      client.Send(message);
-                  };
-              };
-            Console.ReadLine();
+            Server.OnNewConnection += (AbstractConnection client) =>
+            {
+                //client = new RsaDecorator(client,true);
+                client.ReceivingState = ReceivingState.Event;
+                client.Connect();
+                Console.WriteLine("New connection!");
+                client.Send(Encoding.UTF8.GetBytes("Still text"));
+                client.OnReceiveData += (byte[] message) =>
+                {
+                    Console.WriteLine($"Has been received message: {Encoding.UTF8.GetString(message)}");
+                    client.Send(message);
+                };
+            };
+            Task.Run(Server.Listen).Wait();
         }
     }
 }
