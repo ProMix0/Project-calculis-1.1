@@ -7,6 +7,8 @@ using System.Net.Sockets;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -22,32 +24,6 @@ namespace CommonLibrary
         private string ip;
         private int port;
 
-        private Task receiveTask;
-
-        private readonly ConcurrentQueue<byte> receivedBytes = new ConcurrentQueue<byte>();
-
-        public override ReceivingState ReceivingState
-        {
-            get
-            {
-                lock (receiveStateObject)
-                {
-                    return receivingState;
-                }
-            }
-            set
-            {
-                lock (receiveStateObject)
-                {
-                    receivingState = value;
-                }
-            }
-        }
-        private ReceivingState receivingState = ReceivingState.Both;
-        private object receiveStateObject = new object();
-
-        public override event ReceiveData OnReceiveData;
-
         public TcpConnection(TcpClient client)
         {
             this.client = client;
@@ -55,7 +31,6 @@ namespace CommonLibrary
             if (IsActive())
             {
                 stream = client.GetStream();
-                receiveTask =  BeginReceive();
             }
         }
         public TcpConnection()
@@ -87,15 +62,14 @@ namespace CommonLibrary
             {
                 client.Connect(ip, port);
                 stream = client.GetStream();
-                receiveTask = BeginReceive();
             }
         }
 
         public override void Disconnect()
         {
             cancel.Cancel();
-            receiveTask.Wait();
             cancel.Dispose();
+            cancel = new CancellationTokenSource();
             client.Close();
         }
 
@@ -103,104 +77,51 @@ namespace CommonLibrary
         {
             if (IsActive())
             {
+                stream.Write(BitConverter.GetBytes(message.Length));
                 stream.Write(message);
             }
         }
 
-        private async Task BeginReceive()
+        public override async Task<byte[]> GetMessageAsync()
         {
-            try
-            {
-                byte[] buffer = new byte[1024];
-                while (true)
-                {
-                    int bytesReceived = await stream.ReadAsync(buffer, cancel.Token);
-
-                    lock (receiveStateObject)
-                    {
-                        if (ReceivingState.HasFlag(ReceivingState.Method))
-                            for (int i = 0; i < bytesReceived; i++)
-                                receivedBytes.Enqueue(buffer[i]);
-
-                        if (ReceivingState.HasFlag(ReceivingState.Event))
-                            OnReceiveData?.Invoke(buffer[0..bytesReceived]);
-                    }
-                }
-            }
-            catch(Exception ex)
-            {
-                Console.WriteLine(ex.Message);
-            }
-        }
-
-        public override IEnumerable<byte> GetReceived()
-        {
-            lock (receivedBytes)
-            {
-                while (receivedBytes.TryDequeue(out byte b))
-                    yield return b;
-            }
-        }
-
-        public override int GetReceivedCount()
-        {
-            if (receiveTask.Exception != null) throw receiveTask.Exception;
-            lock (receivedBytes)
-            {
-                return receivedBytes.Count;
-            }
+            byte[] lengthBytes = new byte[4];
+            await stream.ReadAsync(lengthBytes, cancel.Token);
+            int length = BitConverter.ToInt32(lengthBytes);
+            byte[] message = new byte[length];
+            await stream.ReadAsync(message, cancel.Token);
+            return message;
         }
     }
 
     public class RsaDecorator : AbstractConnection
     {
-        private AbstractConnection innerConnection;
+        private readonly AbstractConnection innerConnection;
 
         private RSAParameters publicKey;
         private RSAParameters privateKey;
 
-        private readonly KeyGen keyGen=new KeyGen();
-
-        public bool ReceiveKeyFirst { get;private set; }
-
-        public override ReceivingState ReceivingState
-        {
-            get => innerConnection.ReceivingState;
-            set => innerConnection.ReceivingState = value;
-        }
-        public override event ReceiveData OnReceiveData;
+        private readonly KeyGen keyGen = new KeyGen();
 
         private bool connectionCompleted = false;
+
+        public byte KeysCount => keyGen.KeysCount;
 
         public RsaDecorator(AbstractConnection connection)
         {
             innerConnection = connection;
-            innerConnection.OnReceiveData += (byte[] message) =>
-              {
-                  OnReceiveData?.Invoke(Decrypt(message));
-              };
-        }
-        public RsaDecorator(AbstractConnection connection, bool receiveKeyFirst)
-            : this(connection)
-        {
-            ReceiveKeyFirst = receiveKeyFirst;
         }
 
         private void SendKey(RSAParameters key)
         {
-            RsaSerializable serializableKey = new RsaSerializable(key);
-            BinaryFormatter formatter = new BinaryFormatter();
-            using MemoryStream stream = new MemoryStream();
-            formatter.Serialize(stream, serializableKey);
-            innerConnection.Send(stream.ToArray());
+            var key1 = new RsaSerializable(key);
+            var str = JsonSerializer.Serialize(key1);
+            innerConnection.Send(Encoding.UTF8.GetBytes(str));
         }
-        private RSAParameters ReceiveKey()
+        private async Task<RSAParameters>ReceiveKey()
         {
-            BinaryFormatter formatter = new BinaryFormatter();
-            using Stream stream = new MemoryStream();
-            while (innerConnection.GetReceivedCount() == 0) Thread.Sleep(100);
-            stream.Write(innerConnection.GetReceived().ToArray());
-            return ((RsaSerializable)formatter.Deserialize(stream)).GetAsRsaParameters();
+            Task<byte[]> task = innerConnection.GetMessageAsync();
+            await task;
+            return JsonSerializer.Deserialize<RsaSerializable>(Encoding.UTF8.GetString(task.Result)).ToRsaParameters();
         }
 
         public override void Connect()
@@ -208,25 +129,9 @@ namespace CommonLibrary
             if (!innerConnection.IsActive())
                 innerConnection.Connect();
             privateKey = keyGen.GetRSAParameters();
-            //try
-            //{
 
-            // Try to remove "ReceiveKeyFirst" property
-            //if (ReceiveKeyFirst)
-            //{
-            //    publicKey = ReceiveKey();
-            //    SendKey(privateKey);
-            //}
-            //else
-            //{
             SendKey(privateKey);
-            publicKey = ReceiveKey();
-            //}
-            //}
-            //catch
-            //{
-            //    throw new CryptographicException();
-            //}
+            publicKey = ReceiveKey().Result;
             connectionCompleted = true;
         }
 
@@ -241,9 +146,11 @@ namespace CommonLibrary
             return connectionCompleted && innerConnection.IsActive();
         }
 
-        public override IEnumerable<byte> GetReceived()
+        public override async Task<byte[]> GetMessageAsync()
         {
-            return Decrypt(innerConnection.GetReceived().ToArray());
+            Task<byte[]> task = innerConnection.GetMessageAsync();
+            await task;
+            return Decrypt(task.Result);
         }
 
         public override void Send(byte[] message)
@@ -258,35 +165,31 @@ namespace CommonLibrary
 
         private byte[] Encrypt(byte[] message)
         {
-            using var rsa = new RSACryptoServiceProvider();
+            using RSACryptoServiceProvider rsa = new RSACryptoServiceProvider();
             rsa.ImportParameters(publicKey);
             return rsa.Encrypt(message, false);
         }
 
         private byte[] Decrypt(byte[] message)
         {
-            using var rsa = new RSACryptoServiceProvider();
+            using RSACryptoServiceProvider rsa = new RSACryptoServiceProvider();
             rsa.ImportParameters(privateKey);
             return rsa.Decrypt(message, false);
         }
 
-        public override int GetReceivedCount()
-        {
-            return innerConnection.GetReceivedCount();
-        }
-
         [Serializable]
-        public class RsaSerializable
+        private class RsaSerializable
         {
-            public byte[] Exponent;
-            public byte[] Modulus;
+            public byte[] Exponent { get; set; }
+            public byte[] Modulus { get; set; }
 
             public RsaSerializable(RSAParameters parameters)
             {
                 Exponent = parameters.Exponent;
                 Modulus = parameters.Modulus;
             }
-            public RSAParameters GetAsRsaParameters()
+            public RsaSerializable() { }
+            public RSAParameters ToRsaParameters()
             {
                 return new RSAParameters() { Exponent = Exponent, Modulus = Modulus };
             }
@@ -294,10 +197,15 @@ namespace CommonLibrary
 
         private class KeyGen
         {
+            internal byte KeysCount { get => keysCount; set => keysCount = value == 0 ? throw new ArgumentOutOfRangeException() : value; }
+            private byte keysCount = 2;
 
-            internal int KeysCount { get; set; } = 2;
+            private readonly Queue<RSAParameters> keys = new Queue<RSAParameters>();
 
-            private Queue<RSAParameters> Keys;
+            internal KeyGen()
+            {
+                GenerateKeyToQueue();
+            }
 
             /// <summary>
             ///  Метод, возвращающий ключ
@@ -305,54 +213,38 @@ namespace CommonLibrary
             internal RSAParameters GetRSAParameters()
             {
                 // Заполнение очереди с ключами до указанного количества +1
-                for (int i = 0; i <= KeysCount - Keys.Count; i++)
+                for (int i = 0; i <= KeysCount - keys.Count; i++)
                     GenerateKeyToQueue();
 
                 // Ожидание появления ключей в очереди
-                while (Keys.Count == 0)Thread.Sleep(100);
+                while (keys.Count == 0) Task.Delay(100);
 
                 // Извлечение результата
-                lock (Keys)
+                lock (keys)
                 {
-                    return Keys.Dequeue();
+                    return keys.Dequeue();
                 }
-            }
-
-            internal KeyGen()
-            {
-
-                Keys = new Queue<RSAParameters>();
-                GenerateKeyToQueue();
-
             }
 
             /// <summary>
             ///  Метод, генерирующий ключ и добавляющий его в очередь
             /// </summary>
-            private void GenerateKeyToQueue()
+            private Task GenerateKeyToQueue()
             {
                 // Запуск асинхронной генерации
-                Task.Run(() =>
+                return Task.Run(() =>
                 {
                     // Генерация
                     using var rsa = new RSACryptoServiceProvider();
                     RSAParameters result = rsa.ExportParameters(true);
 
                     // Добавление в очередь
-                    lock (Keys)
+                    lock (keys)
                     {
-                        Keys.Enqueue(result);
+                        keys.Enqueue(result);
                     }
                 });
             }
         }
-    }
-
-    [Flags]
-    public enum ReceivingState : byte
-    {
-        Method,
-        Event,
-        Both=Event|Method
     }
 }

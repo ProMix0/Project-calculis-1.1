@@ -16,18 +16,10 @@ namespace Server
         public delegate void NewConnectionHandler(AbstractConnection client);
         public static event NewConnectionHandler OnNewConnection;
 
-        //internal static List<TcpConnection> connections = new List<TcpConnection>();
-
         public static void SetPort(int port)
         {
             listener = new TcpListener(IPAddress.Any, port);
         }
-
-        //public static IEnumerable<TcpConnection> GetConnections()
-        //{
-        //    foreach (var item in connections)
-        //        yield return item;
-        //}
 
         public static void Listen()
         {
@@ -41,7 +33,6 @@ namespace Server
                     {
                         AbstractConnection connection = new TcpConnection(listener.AcceptTcpClient());
                         OnNewConnection?.Invoke(connection);
-                        //connections.Add(connection);
                     }
                 //}
                 //catch (Exception ex)

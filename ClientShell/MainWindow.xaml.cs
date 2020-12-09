@@ -26,28 +26,28 @@ namespace ClientShell
         public MainWindow()
         {
             InitializeComponent();
-            AbstractConnection connection = new TcpConnection(); //new RsaDecorator(new TcpConnection(),false);
+            AbstractConnection connection =  new RsaDecorator(new TcpConnection());
+            //AbstractConnection connection = new TcpConnection();
             connection.SetEndPoint("127.0.0.1", 8888);
-            connection.ReceivingState = ReceivingState.Method;
             connection.Connect();
-            while (connection.GetReceivedCount() == 0) Thread.Sleep(100);
-            output.Text = Encoding.UTF8.GetString(connection.GetReceived().ToArray());
-            //try
-            //{
-            //    button.Click += (object sender, RoutedEventArgs e) =>
-            //    {
-            //        if (connection.IsActive())
-            //        {
-            //            connection.Send(Encoding.UTF8.GetBytes(input.Text));
-            //            while (connection.GetReceivedCount() == 0) Thread.Sleep(100);
-            //            output.Text = Encoding.UTF8.GetString(connection.GetReceived().ToArray());
-            //        }
-            //    };
-            //}
-            //catch (Exception ex)
-            //{
-            //    MessageBox.Show(ex.Message);
-            //}
+            //output.Text = Encoding.UTF8.GetString(connection.GetMessage().Result);
+            try
+            {
+                button.Click += async (object sender, RoutedEventArgs e) =>
+                 {
+                     if (connection.IsActive())
+                     {
+                         connection.Send(Encoding.UTF8.GetBytes(input.Text));
+                         Task<byte[]> task = connection.GetMessageAsync();
+                         await task;
+                         output.Text = Encoding.UTF8.GetString(task.Result);
+                     }
+                 };
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
         }
     }
 }
