@@ -1,20 +1,17 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Net.Sockets;
-using System.Runtime.Serialization.Formatters.Binary;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace CommonLibrary
 {
-
+    /// <summary>
+    /// Класс TCP-подключения
+    /// </summary>
     public class TcpConnection : AbstractConnection
     {
         private readonly TcpClient client;
@@ -24,41 +21,54 @@ namespace CommonLibrary
         private string ip;
         private int port;
 
+        /// <summary>
+        /// Инициализация подключения на основе подключённого TcpClient
+        /// </summary>
+        /// <param name="client">Подключённый TcpClient</param>
         public TcpConnection(TcpClient client)
         {
             this.client = client;
             cancel = new CancellationTokenSource();
-            if (IsActive())
+            if (IsActive)
             {
                 stream = client.GetStream();
             }
         }
+        /// <summary>
+        /// Инициализация подключения по умолчанию
+        /// </summary>
         public TcpConnection()
             : this(new TcpClient())
         { }
 
-        public override bool IsActive()
+        /// <inheritdoc/>
+        public override bool IsActive
         {
-            try
+            get
             {
-                client.GetStream().Write(new byte[0]);
-                return true;
-            }
-            catch
-            {
-                return false;
+                try
+                {
+                    client.GetStream().Write(new byte[0]);
+                    return true;
+                }
+                catch
+                {
+                    return false;
+                }
             }
         }
 
+        /// <inheritdoc/>
         public override void SetEndPoint(string ip, int port)
         {
             this.ip = ip;
             this.port = port;
         }
 
+        /// <inheritdoc/>
         public override void Connect()
         {
-            if (!IsActive())
+            if (!IsActive)
             {
                 client.Connect(ip, port);
                 stream = client.GetStream();
@@ -75,7 +85,7 @@ namespace CommonLibrary
 
         public override void Send(byte[] message)
         {
-            if (IsActive())
+            if (IsActive)
             {
                 stream.Write(BitConverter.GetBytes(message.Length));
                 stream.Write(message);
@@ -126,7 +136,7 @@ namespace CommonLibrary
 
         public override void Connect()
         {
-            if (!innerConnection.IsActive())
+            if (!innerConnection.IsActive)
                 innerConnection.Connect();
             privateKey = keyGen.GetRSAParameters();
 
@@ -141,9 +151,12 @@ namespace CommonLibrary
             innerConnection.Disconnect();
         }
 
-        public override bool IsActive()
+        public override bool IsActive
         {
-            return connectionCompleted && innerConnection.IsActive();
+            get
+            {
+                return connectionCompleted && innerConnection.IsActive;
+            }
         }
 
         public override async Task<byte[]> GetMessageAsync()
