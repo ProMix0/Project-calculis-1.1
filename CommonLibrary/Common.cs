@@ -29,10 +29,6 @@ namespace CommonLibrary
         {
             this.client = client;
             cancel = new CancellationTokenSource();
-            if (IsActive)
-            {
-                stream = client.GetStream();
-            }
         }
         /// <summary>
         /// Инициализация TCP-подключения
@@ -66,36 +62,41 @@ namespace CommonLibrary
         public override void Connect()
         {
             if (!IsActive)
-            {
                 client.Connect(ip, port);
-                stream = client.GetStream();
-            }
+            stream = client.GetStream();
         }
 
         public override void Disconnect()
         {
+            //Остановка потока прослушивания
             cancel.Cancel();
             cancel.Dispose();
             cancel = new CancellationTokenSource();
+
+            //Закрытие внутреннего подключения
             client.Close();
         }
 
         public override void Send(byte[] message)
         {
-            if (IsActive)
-            {
-                stream.Write(BitConverter.GetBytes(message.Length));
-                stream.Write(message);
-            }
+            //Отправка длины сообщения
+            stream.Write(BitConverter.GetBytes(message.Length));
+
+            //Отправка сообщения
+            stream.Write(message);
         }
 
         public override async Task<byte[]> GetMessageAsync()
         {
+            //Получение длины сообщения
             byte[] lengthBytes = new byte[4];
             await stream.ReadAsync(lengthBytes, cancel.Token);
             int length = BitConverter.ToInt32(lengthBytes);
+
+            //Получение сообщения
             byte[] message = new byte[length];
             await stream.ReadAsync(message, cancel.Token);
+
             return message;
         }
     }
@@ -134,8 +135,11 @@ namespace CommonLibrary
         /// <param name="key">Публичный ключ</param>
         private void SendKey(RSAParameters key)
         {
+            //Сериализация ключа
             var key1 = new RsaSerializable(key);
             var str = JsonSerializer.Serialize(key1);
+
+            //Отправка ключа
             innerConnection.Send(Encoding.UTF8.GetBytes(str));
         }
         /// <summary>
@@ -144,8 +148,11 @@ namespace CommonLibrary
         /// <returns>Задача получения ключа</returns>
         private async Task<RSAParameters>ReceiveKey()
         {
+            //Получение ключа от внутреннего подключения
             Task<byte[]> task = innerConnection.GetMessageAsync();
             await task;
+
+            //Десериализация ключа
             return JsonSerializer.Deserialize<RsaSerializable>(Encoding.UTF8.GetString(task.Result)).ToRsaParameters();
         }
 
@@ -156,10 +163,14 @@ namespace CommonLibrary
         {
             if (!innerConnection.IsActive)
                 innerConnection.Connect();
+
+            //Получение пары ключей
             privateKey = keyGen.GetRSAParameters();
 
+            //Обмен ключами
             SendKey(privateKey);
             publicKey = ReceiveKey().Result;
+
             connectionCompleted = true;
         }
 
@@ -182,8 +193,11 @@ namespace CommonLibrary
 
         public override async Task<byte[]> GetMessageAsync()
         {
+            //Получает сообщение от внутреннего подключения
             Task<byte[]> task = innerConnection.GetMessageAsync();
             await task;
+
+            //Расшифровка сообщения
             return Decrypt(task.Result);
         }
 
