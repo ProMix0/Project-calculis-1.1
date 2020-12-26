@@ -22,7 +22,7 @@ namespace CommonLibrary
         private int port;
 
         /// <summary>
-        /// Инициализация подключения на основе подключённого TcpClient
+        /// Создание объекта подключения на основе подключённого TcpClient
         /// </summary>
         /// <param name="client">Подключённый TcpClient</param>
         public TcpConnection(TcpClient client)
@@ -35,13 +35,12 @@ namespace CommonLibrary
             }
         }
         /// <summary>
-        /// Инициализация подключения по умолчанию
+        /// Инициализация TCP-подключения
         /// </summary>
         public TcpConnection()
             : this(new TcpClient())
         { }
 
-        /// <inheritdoc/>
         public override bool IsActive
         {
             get
@@ -58,14 +57,12 @@ namespace CommonLibrary
             }
         }
 
-        /// <inheritdoc/>
         public override void SetEndPoint(string ip, int port)
         {
             this.ip = ip;
             this.port = port;
         }
 
-        /// <inheritdoc/>
         public override void Connect()
         {
             if (!IsActive)
@@ -103,6 +100,9 @@ namespace CommonLibrary
         }
     }
 
+    /// <summary>
+    /// RSA-декоратор подкключения
+    /// </summary>
     public class RsaDecorator : AbstractConnection
     {
         private readonly AbstractConnection innerConnection;
@@ -114,19 +114,34 @@ namespace CommonLibrary
 
         private bool connectionCompleted = false;
 
+        /// <summary>
+        /// Задаёт и возвращает количество хранящихся ключей
+        /// </summary>
         public byte KeysCount => keyGen.KeysCount;
 
+        /// <summary>
+        /// Создаёт новый экземпляр
+        /// </summary>
+        /// <param name="connection">Внутренне подключение, через которое будут передаваться данные</param>
         public RsaDecorator(AbstractConnection connection)
         {
             innerConnection = connection;
         }
 
+        /// <summary>
+        /// Передаёт свой публичный ключ
+        /// </summary>
+        /// <param name="key">Публичный ключ</param>
         private void SendKey(RSAParameters key)
         {
             var key1 = new RsaSerializable(key);
             var str = JsonSerializer.Serialize(key1);
             innerConnection.Send(Encoding.UTF8.GetBytes(str));
         }
+        /// <summary>
+        /// Принимает удалённый публичный ключ
+        /// </summary>
+        /// <returns>Задача получения ключа</returns>
         private async Task<RSAParameters>ReceiveKey()
         {
             Task<byte[]> task = innerConnection.GetMessageAsync();
@@ -134,6 +149,9 @@ namespace CommonLibrary
             return JsonSerializer.Deserialize<RsaSerializable>(Encoding.UTF8.GetString(task.Result)).ToRsaParameters();
         }
 
+        /// <summary>
+        /// Подключается к конечной точке
+        /// </summary>
         public override void Connect()
         {
             if (!innerConnection.IsActive)
@@ -145,6 +163,9 @@ namespace CommonLibrary
             connectionCompleted = true;
         }
 
+        /// <summary>
+        /// Разрывает установленное подключение
+        /// </summary>
         public override void Disconnect()
         {
             connectionCompleted = false;
@@ -176,6 +197,11 @@ namespace CommonLibrary
             innerConnection.SetEndPoint(ip, port);
         }
 
+        /// <summary>
+        /// Расшифровывает данные на основе закрытого ключа
+        /// </summary>
+        /// <param name="message">Зашифрованное сообщение</param>
+        /// <returns>Расшифрованное сообщение</returns>
         private byte[] Encrypt(byte[] message)
         {
             using RSACryptoServiceProvider rsa = new RSACryptoServiceProvider();
@@ -183,6 +209,11 @@ namespace CommonLibrary
             return rsa.Encrypt(message, false);
         }
 
+        /// <summary>
+        /// Зашифровывает данные на основе удалённого публичного ключа
+        /// </summary>
+        /// <param name="message">Сообщение</param>
+        /// <returns>Зашифрованное сообщение</returns>
         private byte[] Decrypt(byte[] message)
         {
             using RSACryptoServiceProvider rsa = new RSACryptoServiceProvider();
@@ -190,38 +221,52 @@ namespace CommonLibrary
             return rsa.Decrypt(message, false);
         }
 
+        /// <summary>
+        /// Класс для передачи публичного ключа
+        /// </summary>
         [Serializable]
         private class RsaSerializable
         {
             public byte[] Exponent { get; set; }
             public byte[] Modulus { get; set; }
 
+            /// <summary>
+            /// Сохраняет открытый ключ из <с>RSAParameters</с>
+            /// </summary>
+            /// <param name="parameters"></param>
             public RsaSerializable(RSAParameters parameters)
             {
                 Exponent = parameters.Exponent;
                 Modulus = parameters.Modulus;
             }
             public RsaSerializable() { }
+            /// <summary>
+            /// Создаёт <c>RSAParameters</c> из имеющихся данных
+            /// </summary>
+            /// <returns>Восстановленный экземпляр <c>RSAParameters</c></returns>
             public RSAParameters ToRsaParameters()
             {
                 return new RSAParameters() { Exponent = Exponent, Modulus = Modulus };
             }
         }
 
+        /// <summary>
+        /// Класс для генерации ключей
+        /// </summary>
         private class KeyGen
         {
-            internal byte KeysCount { get => keysCount; set => keysCount = value == 0 ? throw new ArgumentOutOfRangeException() : value; }
+            internal byte KeysCount { get => keysCount; set => keysCount = value <= 0 ? throw new ArgumentOutOfRangeException() : value; }
             private byte keysCount = 2;
 
+            /// <summary>
+            /// Очередь, хранящая сгенерированные ключи
+            /// </summary>
             private readonly Queue<RSAParameters> keys = new Queue<RSAParameters>();
 
-            internal KeyGen()
-            {
-                GenerateKeyToQueue();
-            }
+            internal KeyGen(){}
 
             /// <summary>
-            ///  Метод, возвращающий ключ
+            ///  Возвращающает сгенерированный ключ
             /// </summary>
             internal RSAParameters GetRSAParameters()
             {
@@ -240,7 +285,7 @@ namespace CommonLibrary
             }
 
             /// <summary>
-            ///  Метод, генерирующий ключ и добавляющий его в очередь
+            ///  Генерируюет ключ и добавляет его в очередь
             /// </summary>
             private Task GenerateKeyToQueue()
             {
