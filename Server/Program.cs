@@ -1,40 +1,24 @@
-﻿using CommonLibrary;
 using System;
 using System.Collections.Generic;
-using System.Text;
-using System.Threading;
+using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 namespace Server
 {
-    class Program
+    public class Program
     {
-        static void Main()
+        public static void Main(string[] args)
         {
-            Server.SetPort(8888);
-            Server.OnNewConnection += async (AbstractConnection client) =>
-            {
-                client = new RsaDecorator(client);
-                client.Connect();
-                Console.WriteLine("New connection!");
-                //client.Send(Encoding.UTF8.GetBytes("Still text"));
-                try
-                {
-                    while (true)
-                    {
-                        Task<byte[]> task = client.GetMessageAsync();
-                        await task;
-                        Console.WriteLine($"Has been received message: {Encoding.UTF8.GetString(task.Result)}");
-                        client.Send(task.Result);
-                    }
-                }
-                catch
-                {
-                    Console.WriteLine($"Connection has been closed");
-                }
-            };
-            Task.Run(Server.Listen);
-            Console.ReadLine();
+            CreateHostBuilder(args).Build().Run();
         }
+
+        public static IHostBuilder CreateHostBuilder(string[] args) =>
+            Host.CreateDefaultBuilder(args)
+                .ConfigureServices((hostContext, services) =>
+                {
+                    services.AddHostedService<Worker>();
+                });
     }
 }

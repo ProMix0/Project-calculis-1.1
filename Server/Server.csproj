@@ -1,12 +1,26 @@
-<Project Sdk="Microsoft.NET.Sdk">
-
+﻿<Project Sdk="Microsoft.NET.Sdk.Worker" ToolsVersion="Current">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <TargetFramework>net5.0</TargetFramework>
+    <UserSecretsId>dotnet-Server-4035F725-8C02-4A62-9A2F-36104D8DA0F2</UserSecretsId>
+    <FileUpgradeFlags>
+    </FileUpgradeFlags>
+    <OldToolsVersion>2.0</OldToolsVersion>
+    <UpgradeBackupLocation />
+    <ProjectGuid>{A8A4FFAE-27AB-4C64-B42D-FF2E5447116A}</ProjectGuid>
   </PropertyGroup>
-
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\CommonLibrary\CommonLibrary.csproj" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="5.0.0" />
   </ItemGroup>
-
+  <ItemGroup>
+    <ProjectReference Include="..\CommonLibrary\CommonLibrary.csproj">
+      <Project>{0cf29b69-11a7-446c-9f07-5da6b2c03be5}</Project>
+      <Name>CommonLibrary</Name>
+    </ProjectReference>
+  </ItemGroup>
 </Project>
