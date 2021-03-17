@@ -11,14 +11,14 @@ namespace Server
 {
     public class Worker : BackgroundService
     {
-        private readonly ILogger<Worker> _logger;
+        private readonly ILogger<Worker> logger;
 
         private AbstractServer abstractServer;
         private readonly List<Interviewer> interviewers = new();
 
         public Worker(ILogger<Worker> logger)
         {
-            _logger = logger;
+            this.logger = logger;
             abstractServer = new TCPServer(3490);
             abstractServer.OnNewConnection += (client) => 
             {
@@ -30,7 +30,7 @@ namespace Server
         {
             while (!stoppingToken.IsCancellationRequested)
             {
-                _logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
+                logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
                 await Task.Delay(1000, stoppingToken);
             }
         }
@@ -38,7 +38,7 @@ namespace Server
 
     public class Interviewer
     {
-        private AbstractConnection client;
+        private readonly AbstractConnection client;
 
         public Interviewer(AbstractConnection client)
         {

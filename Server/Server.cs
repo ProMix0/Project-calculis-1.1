@@ -24,7 +24,7 @@ namespace Server
 
     public class TCPServer : AbstractServer
     {
-        private TcpListener listener;
+        private readonly TcpListener listener;
 
         public TCPServer(int port)
         {
@@ -35,7 +35,6 @@ namespace Server
         {
             while (true)
             {
-                if (listener == null) throw new ArgumentNullException();
                 try
                 {
                     listener.Start();
