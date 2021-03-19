@@ -35,7 +35,7 @@ namespace ClientShell
             {
                 button.Click += async (object sender, RoutedEventArgs e) =>
                  {
-                     if (connection.IsActive())
+                     if (connection.IsActive)
                      {
                          connection.Send(Encoding.UTF8.GetBytes(input.Text));
                          Task<byte[]> task = connection.GetMessageAsync();
