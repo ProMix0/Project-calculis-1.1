@@ -26,28 +26,29 @@ namespace ClientShell
         public MainWindow()
         {
             InitializeComponent();
-            AbstractConnection connection =  new RsaDecorator(new TcpConnection());
-            //AbstractConnection connection = new TcpConnection();
-            connection.SetEndPoint("127.0.0.1", 8888);
-            connection.Connect();
-            //output.Text = Encoding.UTF8.GetString(connection.GetMessage().Result);
-            try
-            {
-                button.Click += async (object sender, RoutedEventArgs e) =>
-                 {
-                     if (connection.IsActive)
-                     {
-                         connection.Send(Encoding.UTF8.GetBytes(input.Text));
-                         Task<byte[]> task = connection.GetMessageAsync();
-                         await task;
-                         output.Text = Encoding.UTF8.GetString(task.Result);
-                     }
-                 };
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message);
-            }
+            Content = new AuthorizationControl();
+            //AbstractConnection connection =  new RsaDecorator(new TcpConnection());
+            ////AbstractConnection connection = new TcpConnection();
+            //connection.SetEndPoint("127.0.0.1", 8888);
+            //connection.Connect();
+            ////output.Text = Encoding.UTF8.GetString(connection.GetMessage().Result);
+            //try
+            //{
+            //    button.Click += async (object sender, RoutedEventArgs e) =>
+            //     {
+            //         if (connection.IsActive)
+            //         {
+            //             connection.Send(Encoding.UTF8.GetBytes(input.Text));
+            //             Task<byte[]> task = connection.GetMessageAsync();
+            //             await task;
+            //             output.Text = Encoding.UTF8.GetString(task.Result);
+            //         }
+            //     };
+            //}
+            //catch (Exception ex)
+            //{
+            //    MessageBox.Show(ex.Message);
+            //}
         }
     }
 }

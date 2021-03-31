@@ -17,7 +17,7 @@ namespace CommonLibrary
         public abstract bool IsActive { get; }
 
         /// <summary>
-        /// Устанавливающий конечную точку подклбчения
+        /// Устанавливающий конечную точку подключения
         /// </summary>
         /// <param name="ip">IP-адресс</param>
         /// <param name="port">Порт конечной точки</param>
@@ -40,9 +40,22 @@ namespace CommonLibrary
         public abstract void Send(byte[] message);
 
         /// <summary>
-        /// Методасинхронного получения данных
+        /// Метод асинхронного получения данных
         /// </summary>
         /// <returns>Задача, получающая результат</returns>
         public abstract Task<byte[]> GetMessageAsync();
+    }
+
+    public abstract class AbstractServer
+    {
+        public delegate void NewConnectionHandler(AbstractConnection client);
+        public event NewConnectionHandler OnNewConnection;
+
+        public abstract void Listen();
+
+        protected void RaiseNewConnectionHandler(AbstractConnection client)
+        {
+            OnNewConnection?.Invoke(client);
+        }
     }
 }

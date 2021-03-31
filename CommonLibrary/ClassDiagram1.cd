@@ -1,0 +1,67 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1" MembersFormat="NameAndType">
+  <Class Name="CommonLibrary.AbstractConnection">
+    <Position X="2.5" Y="0.5" Width="2.5" />
+    <TypeIdentifier>
+      <HashCode>AAQAAAAAgAAAAAAAEEQAAIAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Abstract.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="CommonLibrary.AbstractServer">
+    <Position X="8.5" Y="0.5" Width="3.25" />
+    <NestedTypes>
+      <Delegate Name="CommonLibrary.AbstractServer.NewConnectionHandler" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Abstract.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Delegate>
+    </NestedTypes>
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAEAAAAAAAAAAAACAAABAAAAAAAAAAAA=</HashCode>
+      <FileName>Abstract.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="CommonLibrary.TcpConnection">
+    <Position X="0.75" Y="3.5" Width="2.5" />
+    <Compartments>
+      <Compartment Name="Fields" Collapsed="true" />
+    </Compartments>
+    <TypeIdentifier>
+      <HashCode>AARAAAAAgAAAAAAAEEQAAIAAAAAAAAgACAAgBAAAAAA=</HashCode>
+      <FileName>Common.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="CommonLibrary.RsaDecorator">
+    <Position X="4" Y="3.5" Width="2.75" />
+    <Compartments>
+      <Compartment Name="Fields" Collapsed="true" />
+    </Compartments>
+    <NestedTypes>
+      <Class Name="CommonLibrary.RsaDecorator.RsaSerializable" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Common.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Class>
+      <Class Name="CommonLibrary.RsaDecorator.KeyGen" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Common.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Class>
+    </NestedTypes>
+    <TypeIdentifier>
+      <HashCode>AQQBAAAAgAAAAAARFEQAAIAAAAAAAgBAAAAAAASAACA=</HashCode>
+      <FileName>Common.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="CommonLibrary.TCPServer">
+    <Position X="9.25" Y="3.25" Width="1.5" />
+    <Compartments>
+      <Compartment Name="Fields" Collapsed="true" />
+    </Compartments>
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAEAAAAAAAAAAAIAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Common.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Font Name="Segoe UI" Size="9" />
+</ClassDiagram>

@@ -320,4 +320,38 @@ namespace CommonLibrary
             }
         }
     }
+
+    public class TCPServer : AbstractServer
+    {
+        private readonly TcpListener listener;
+
+        public TCPServer(int port)
+        {
+            listener = new TcpListener(IPAddress.Any, port);
+        }
+
+        public override void Listen()
+        {
+            while (true)
+            {
+                try
+                {
+                    listener.Start();
+                    while (true)
+                    {
+                        AbstractConnection connection = new TcpConnection(listener.AcceptTcpClient());
+                        RaiseNewConnectionHandler(connection);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.Message);
+                }
+                finally
+                {
+                    listener?.Stop();
+                }
+            }
+        }
+    }
 }
