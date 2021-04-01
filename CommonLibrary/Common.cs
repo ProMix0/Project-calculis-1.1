@@ -330,28 +330,31 @@ namespace CommonLibrary
             listener = new TcpListener(IPAddress.Any, port);
         }
 
-        public override void Listen()
+        public override Task Listen()
         {
-            while (true)
+            return Task.Run(() =>
             {
-                try
+                while (true)
                 {
-                    listener.Start();
-                    while (true)
+                    try
                     {
-                        AbstractConnection connection = new TcpConnection(listener.AcceptTcpClient());
-                        RaiseNewConnectionHandler(connection);
+                        listener.Start();
+                        while (true)
+                        {
+                            AbstractConnection connection = new TcpConnection(listener.AcceptTcpClient());
+                            RaiseNewConnectionHandler(connection);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine(ex.Message);
+                    }
+                    finally
+                    {
+                        listener?.Stop();
                     }
                 }
-                catch (Exception ex)
-                {
-                    Console.WriteLine(ex.Message);
-                }
-                finally
-                {
-                    listener?.Stop();
-                }
-            }
+            });
         }
     }
 }
