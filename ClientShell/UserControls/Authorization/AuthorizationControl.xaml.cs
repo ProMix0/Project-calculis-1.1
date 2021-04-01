@@ -18,9 +18,26 @@ namespace ClientShell
     /// </summary>
     public partial class AuthorizationControl : UserControl
     {
+        private LogInControl logInControl;
+        private RegisterControl registerControl;
+
         public AuthorizationControl()
         {
             InitializeComponent();
+            logInControl = new LogInControl(this);
+            registerControl = new RegisterControl(this);
+
+            GoToLogIn();
+        }
+
+        public void GoToLogIn()
+        {
+            border.Child = logInControl;
+        }
+
+        public void GoToRegister()
+        {
+            border.Child = registerControl;
         }
     }
 }
