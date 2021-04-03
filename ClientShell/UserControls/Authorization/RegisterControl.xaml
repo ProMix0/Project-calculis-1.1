@@ -8,17 +8,17 @@
              d:DesignHeight="450" d:DesignWidth="800">
     <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
         <TextBlock Margin="10 10 10 0">
-            Введите логин:
+            Логин:
         </TextBlock>
         <TextBox x:Name="loginBox" Margin="10 0 10 10" Background="LightGray"/>
         
         <TextBlock Margin="10 10 10 0">
-            Введите адрес электронной почты:
+            Адрес электронной почты:
         </TextBlock>
         <TextBox x:Name="mailBox" Margin="10 0 10 10" Background="LightGray"/>
         
         <TextBlock Margin="10 10 10 0">
-            Введите пароль:
+            Пароль:
         </TextBlock>
         <TextBox x:Name="passwordBox" Margin="10 0 10 10" Background="LightGray" ToolTip="Не менее восьми символов"/>
         
