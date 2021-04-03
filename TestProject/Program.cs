@@ -20,16 +20,22 @@ namespace TestProject
     {
         static void Main(string[] args)
         {
-            TCPServer server = new TCPServer(2450);
+            ByMyCode();
+        }
+
+        static void ByMyCode()
+        {
+            TCPServer server = new TCPServer(9999);
             server.OnNewConnection += async (connection) =>
             {
                 AbstractConnection rsaConnection = new RsaDecorator(connection);
+                rsaConnection.Connect();
                 byte[] message = await rsaConnection.GetMessageAsync();
                 Console.WriteLine($"Receive message: {Encoding.UTF8.GetString(message)}");
             };
             server.Listen();
             AbstractConnection connection = new RsaDecorator(new TcpConnection());
-            connection.SetEndPoint("212.164.223.137", 2450);
+            connection.SetEndPoint(IPAddress.Loopback.ToString(), 9999);
             string message = Console.ReadLine();
             connection.Connect();
             connection.Send(Encoding.UTF8.GetBytes(message));

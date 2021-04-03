@@ -14,7 +14,7 @@ namespace CommonLibrary
         /// <summary>
         /// Текущее состояние подключения
         /// </summary>
-        public abstract bool IsActive { get; }
+        public abstract bool Active { get; }
 
         /// <summary>
         /// Устанавливающий конечную точку подключения
