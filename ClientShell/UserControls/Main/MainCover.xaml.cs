@@ -14,21 +14,13 @@ using System.Windows.Shapes;
 namespace ClientShell
 {
     /// <summary>
-    /// Логика взаимодействия для RegisterControl.xaml
+    /// Логика взаимодействия для MainCover.xaml
     /// </summary>
-    public partial class RegisterControl : UserControl
+    public partial class MainCover : UserControl
     {
-        private AuthorizationControl authorizationControl;
-
-        public RegisterControl(AuthorizationControl authorizationControl)
+        public MainCover()
         {
             InitializeComponent();
-            this.authorizationControl = authorizationControl;
-        }
-
-        private void GoToLogIn(object sender, RoutedEventArgs e)
-        {
-            authorizationControl.GoToLogIn();
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using CommonLibrary;
+using Microsoft.Extensions.Logging;
 using Server;
 using System;
 using System.Collections.Concurrent;
@@ -19,10 +20,26 @@ namespace TestProject
     {
         static void Main(string[] args)
         {
-            JsonLogger logger = new JsonLogger(100, "Testing in test project");
-            logger.Log(LogLevel.Information, "Something");
-            using IDisposable disposable = logger.BeginScope("Test scopes");
-            logger.Log(LogLevel.Warning, "In scopes");
+            ByMyCode();
+        }
+
+        static void ByMyCode()
+        {
+            TCPServer server = new TCPServer(9999);
+            server.OnNewConnection += async (connection) =>
+            {
+                AbstractConnection rsaConnection = new RsaDecorator(connection);
+                rsaConnection.Connect();
+                byte[] message = await rsaConnection.GetMessageAsync();
+                Console.WriteLine($"Receive message: {Encoding.UTF8.GetString(message)}");
+            };
+            server.Listen();
+            AbstractConnection connection = new RsaDecorator(new TcpConnection());
+            connection.SetEndPoint(IPAddress.Loopback.ToString(), 9999);
+            string message = Console.ReadLine();
+            connection.Connect();
+            connection.Send(Encoding.UTF8.GetBytes(message));
+            Console.ReadLine();
         }
     }
 }

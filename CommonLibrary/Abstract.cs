@@ -14,7 +14,7 @@ namespace CommonLibrary
         /// <summary>
         /// Текущее состояние подключения
         /// </summary>
-        public abstract bool IsActive { get; }
+        public abstract bool Active { get; }
 
         /// <summary>
         /// Устанавливающий конечную точку подключения
@@ -51,7 +51,7 @@ namespace CommonLibrary
         public delegate void NewConnectionHandler(AbstractConnection client);
         public event NewConnectionHandler OnNewConnection;
 
-        public abstract void Listen();
+        public abstract Task Listen();
 
         protected void RaiseNewConnectionHandler(AbstractConnection client)
         {

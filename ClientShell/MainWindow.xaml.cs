@@ -26,7 +26,6 @@ namespace ClientShell
         public MainWindow()
         {
             InitializeComponent();
-            Content = new AuthorizationControl();
             //AbstractConnection connection =  new RsaDecorator(new TcpConnection());
             ////AbstractConnection connection = new TcpConnection();
             //connection.SetEndPoint("127.0.0.1", 8888);

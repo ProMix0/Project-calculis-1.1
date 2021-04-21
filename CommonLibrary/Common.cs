@@ -22,6 +22,8 @@ namespace CommonLibrary
         private string ip;
         private int port;
 
+        private bool connected;
+
         /// <summary>
         /// Создание объекта подключения на основе подключённого TcpClient
         /// </summary>
@@ -30,21 +32,23 @@ namespace CommonLibrary
         {
             this.client = client;
             cancel = new CancellationTokenSource();
+            connected = true;
         }
         /// <summary>
         /// Инициализация TCP-подключения
         /// </summary>
         public TcpConnection()
             : this(new TcpClient())
-        { }
+        { connected = false; }
 
-        public override bool IsActive
+        public override bool Active
         {
             get
             {
+                if (!connected||stream==null) return false;
                 try
                 {
-                    client.GetStream().Write(new byte[0]);
+                    stream.Write(new byte[0]);
                     return true;
                 }
                 catch
@@ -62,17 +66,19 @@ namespace CommonLibrary
 
         public override void Connect()
         {
-            if (!IsActive)
+            if (!connected)
                 client.Connect(ip, port);
             stream = client.GetStream();
+            cancel = new CancellationTokenSource();
         }
 
         public override void Disconnect()
         {
+            connected = false;
+
             //Остановка потока прослушивания
             cancel.Cancel();
             cancel.Dispose();
-            cancel = new CancellationTokenSource();
 
             //Закрытие внутреннего подключения
             client.Close();
@@ -114,7 +120,7 @@ namespace CommonLibrary
 
         private readonly KeyGen keyGen = new KeyGen();
 
-        private bool connectionCompleted = false;
+        private bool connected = false;
 
         /// <summary>
         /// Задаёт и возвращает количество хранящихся ключей
@@ -162,7 +168,7 @@ namespace CommonLibrary
         /// </summary>
         public override void Connect()
         {
-            if (!innerConnection.IsActive)
+            if (!innerConnection.Active)
                 innerConnection.Connect();
 
             //Получение пары ключей
@@ -172,7 +178,7 @@ namespace CommonLibrary
             SendKey(privateKey);
             publicKey = ReceiveKey().Result;
 
-            connectionCompleted = true;
+            connected = true;
         }
 
         /// <summary>
@@ -180,15 +186,15 @@ namespace CommonLibrary
         /// </summary>
         public override void Disconnect()
         {
-            connectionCompleted = false;
+            connected = false;
             innerConnection.Disconnect();
         }
 
-        public override bool IsActive
+        public override bool Active
         {
             get
             {
-                return connectionCompleted && innerConnection.IsActive;
+                return connected && innerConnection.Active;
             }
         }
 
@@ -330,28 +336,31 @@ namespace CommonLibrary
             listener = new TcpListener(IPAddress.Any, port);
         }
 
-        public override void Listen()
+        public override Task Listen()
         {
-            while (true)
+            return Task.Run(() =>
             {
-                try
+                while (true)
                 {
-                    listener.Start();
-                    while (true)
+                    try
                     {
-                        AbstractConnection connection = new TcpConnection(listener.AcceptTcpClient());
-                        RaiseNewConnectionHandler(connection);
+                        listener.Start();
+                        while (true)
+                        {
+                            AbstractConnection connection = new TcpConnection(listener.AcceptTcpClient());
+                            RaiseNewConnectionHandler(connection);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine(ex.Message);
+                    }
+                    finally
+                    {
+                        listener?.Stop();
                     }
                 }
-                catch (Exception ex)
-                {
-                    Console.WriteLine(ex.Message);
-                }
-                finally
-                {
-                    listener?.Stop();
-                }
-            }
+            });
         }
     }
 }
