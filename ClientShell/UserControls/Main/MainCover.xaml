@@ -12,6 +12,6 @@
                 Your login
             </TextBlock>
         </StackPanel>
-        <Image/>
+        <ContentPresenter x:Name="presenter" />
     </DockPanel>
 </UserControl>
