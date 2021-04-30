@@ -42,10 +42,5 @@ namespace ClientShell
         {
             popup.IsOpen = true;
         }
-
-        private void HidePopup()
-        {
-            popup.IsOpen = false;
-        }
     }
 }

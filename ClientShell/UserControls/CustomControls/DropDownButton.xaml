@@ -8,12 +8,8 @@
              d:DesignHeight="450" d:DesignWidth="800"
              Name="this">
     <StackPanel>
-    <Button x:Name="button" Click="ButtonClick">
-        <ContentPresenter Content="{Binding ElementName=this, Path=ButtonContent}"/>
-        
-    </Button>
-        <Popup x:Name="popup" StaysOpen="False" Placement="Relative">
-            <ContentPresenter Content="{Binding ElementName=this,Path=DropDownContent}"/>
-        </Popup>
+        <Button x:Name="button" Click="ButtonClick" Content="{Binding ElementName=this, Path=ButtonContent}"/>
+        <Popup x:Name="popup" StaysOpen="False" Placement="Relative" 
+               AllowsTransparency="True" Child="{Binding ElementName=this,Path=DropDownContent}"/>
     </StackPanel>
 </UserControl>

@@ -49,5 +49,10 @@ namespace ClientShell
             //    MessageBox.Show(ex.Message);
             //}
         }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            (sender as Button).Height += 10;
+        }
     }
 }
