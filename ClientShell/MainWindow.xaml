@@ -6,8 +6,8 @@
         xmlns:local="clr-namespace:ClientShell"
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800" MinHeight="300" MinWidth="200">
-    <!--<local:AuthorizationControl/>-->
-    <StackPanel>
+    <local:AuthorizationControl/>
+    <!--<StackPanel>
     <local:DropDownButton>
         <local:DropDownButton.ButtonContent>
             <Label Content="Text"/>
@@ -17,5 +17,5 @@
         </local:DropDownButton.DropDownContent>
     </local:DropDownButton>
         <Button Height="40" Click="Button_Click"/>
-    </StackPanel>
+    </StackPanel>-->
 </Window>
